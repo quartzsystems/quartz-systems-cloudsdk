@@ -1,35 +1,35 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Building2, MapPin, ChevronsUpDown, Search, Check } from "lucide-react";
-import { fetchOrgsAndVenues, OrgOption } from "@/lib/organizations";
+import { Building2, Network, ChevronsUpDown, ChevronRight, ChevronDown, Search, Check } from "lucide-react";
+import { collectIds, fetchOrgTree, filterTree, OrgNode, OrgOption } from "@/lib/organizations";
 import { useOrganization } from "@/lib/OrganizationContext";
 
 /// Button + dropdown that sits where the search bar was: shows the Organization
-/// (or Venue) the console is currently scoped to, and lists all Organizations
-/// and Venues from CloudSDK (owprov) to switch between.
+/// (or Venue) the console is scoped to, and presents the full CloudSDK (owprov)
+/// hierarchy — top-level entity → sub-entities → venues — as an expandable tree.
 export function OrganizationSwitcher() {
   const { current, setCurrent } = useOrganization();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [orgs, setOrgs] = useState<OrgOption[]>([]);
-  const [venues, setVenues] = useState<OrgOption[]>([]);
+  const [tree, setTree] = useState<OrgNode[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const ref = useRef<HTMLDivElement>(null);
 
-  // Load the list the first time the dropdown is opened (and refresh on reopen).
+  // Load the hierarchy the first time the dropdown is opened (refresh on reopen).
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     setState("loading");
-    fetchOrgsAndVenues()
-      .then(({ organizations, venues }) => {
+    fetchOrgTree()
+      .then((nodes) => {
         if (cancelled) return;
-        setOrgs(organizations);
-        setVenues(venues);
+        setTree(nodes);
+        setExpanded(new Set(collectIds(nodes))); // default fully expanded
         setState("idle");
-        // Default the current scope to the first Organization if none is set.
-        if (!current && organizations[0]) setCurrent(organizations[0]);
+        // Default the scope to the first top-level Organization if none is set.
+        if (!current && nodes[0]) setCurrent({ id: nodes[0].id, name: nodes[0].name, kind: nodes[0].kind });
       })
       .catch(() => !cancelled && setState("error"));
     return () => {
@@ -52,20 +52,25 @@ export function OrganizationSwitcher() {
     };
   }, [open]);
 
-  const filter = (list: OrgOption[]) =>
-    query ? list.filter((o) => o.name.toLowerCase().includes(query.toLowerCase())) : list;
+  // While searching, prune to matches and force every surviving node open.
+  const visible = useMemo(() => (query ? filterTree(tree, query) : tree), [tree, query]);
+  const forceOpen = query.length > 0;
+  const empty = visible.length === 0;
 
-  const filteredOrgs = useMemo(() => filter(orgs), [orgs, query]);
-  const filteredVenues = useMemo(() => filter(venues), [venues, query]);
-  const empty = filteredOrgs.length === 0 && filteredVenues.length === 0;
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
-  const pick = (org: OrgOption) => {
-    setCurrent(org);
+  const pick = (node: OrgNode) => {
+    setCurrent({ id: node.id, name: node.name, kind: node.kind } as OrgOption);
     setOpen(false);
     setQuery("");
   };
 
-  const CurrentIcon = current?.kind === "venue" ? MapPin : Building2;
+  const CurrentIcon = current?.kind === "venue" ? Building2 : Network;
 
   return (
     <div className="relative" ref={ref}>
@@ -97,19 +102,19 @@ export function OrganizationSwitcher() {
             boxShadow: "var(--qz-shadow-2)",
           }}
         >
-          {/* Search within the list */}
+          {/* Search within the hierarchy */}
           <div className="flex items-center gap-2 px-[10px] py-2 border-b border-[var(--qz-border)]">
             <Search size={13} className="text-[var(--qz-fg-4)] flex-shrink-0" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search organizations & venues…"
+              placeholder="Search for an entity or venue…"
               className="flex-1 bg-transparent outline-none text-[13px] text-[var(--qz-fg-1)] placeholder:text-[var(--qz-fg-4)]"
             />
           </div>
 
-          <div className="max-h-[320px] overflow-auto py-1">
+          <div className="max-h-[360px] overflow-auto py-1">
             {state === "loading" && (
               <p className="px-3 py-3 text-[12px] text-[var(--qz-fg-4)] m-0">Loading…</p>
             )}
@@ -123,37 +128,20 @@ export function OrganizationSwitcher() {
                 No organizations or venues found.
               </p>
             )}
-
-            {state === "idle" && (
-              <>
-                {filteredOrgs.length > 0 && (
-                  <Group title="Organizations">
-                    {filteredOrgs.map((o) => (
-                      <Row
-                        key={`org-${o.id}`}
-                        option={o}
-                        icon={Building2}
-                        selected={current?.id === o.id && current?.kind === o.kind}
-                        onSelect={pick}
-                      />
-                    ))}
-                  </Group>
-                )}
-                {filteredVenues.length > 0 && (
-                  <Group title="Venues">
-                    {filteredVenues.map((o) => (
-                      <Row
-                        key={`venue-${o.id}`}
-                        option={o}
-                        icon={MapPin}
-                        selected={current?.id === o.id && current?.kind === o.kind}
-                        onSelect={pick}
-                      />
-                    ))}
-                  </Group>
-                )}
-              </>
-            )}
+            {state === "idle" &&
+              visible.map((node) => (
+                <TreeRow
+                  key={node.id}
+                  node={node}
+                  depth={0}
+                  expanded={expanded}
+                  forceOpen={forceOpen}
+                  currentId={current?.id}
+                  currentKind={current?.kind}
+                  onToggle={toggle}
+                  onSelect={pick}
+                />
+              ))}
           </div>
         </div>
       )}
@@ -161,37 +149,82 @@ export function OrganizationSwitcher() {
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="py-1">
-      <div className="px-3 pb-1 pt-1 text-[9.5px] uppercase tracking-[0.1em] text-[var(--qz-fg-4)] font-mono">
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Row({
-  option,
-  icon: Icon,
-  selected,
+function TreeRow({
+  node,
+  depth,
+  expanded,
+  forceOpen,
+  currentId,
+  currentKind,
+  onToggle,
   onSelect,
 }: {
-  option: OrgOption;
-  icon: typeof Building2;
-  selected: boolean;
-  onSelect: (o: OrgOption) => void;
+  node: OrgNode;
+  depth: number;
+  expanded: Set<string>;
+  forceOpen: boolean;
+  currentId?: string;
+  currentKind?: string;
+  onToggle: (id: string) => void;
+  onSelect: (n: OrgNode) => void;
 }) {
+  const hasChildren = node.children.length > 0;
+  const isOpen = forceOpen || expanded.has(node.id);
+  const selected = currentId === node.id && currentKind === node.kind;
+  const Icon = node.kind === "venue" ? Building2 : Network;
+
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(option)}
-      className="w-full flex items-center gap-2 px-3 py-[7px] text-left cursor-pointer text-[13px] text-[var(--qz-fg-2)] hover:bg-[color-mix(in_oklab,white_4%,transparent)] hover:text-[var(--qz-fg-1)]"
-    >
-      <Icon size={14} className="text-[var(--qz-fg-4)] flex-shrink-0" />
-      <span className="flex-1 truncate">{option.name}</span>
-      {selected && <Check size={14} className="text-[var(--qz-accent)] flex-shrink-0" />}
-    </button>
+    <>
+      <div
+        className={[
+          "flex items-center gap-1 pr-2 py-[6px] rounded-md cursor-pointer text-[13px] transition-colors",
+          selected
+            ? "bg-[var(--qz-accent-soft)] text-[var(--qz-accent)]"
+            : "text-[var(--qz-fg-2)] hover:bg-[color-mix(in_oklab,white_4%,transparent)] hover:text-[var(--qz-fg-1)]",
+        ].join(" ")}
+        style={{ paddingLeft: 6 + depth * 16 }}
+        onClick={() => onSelect(node)}
+      >
+        {/* Expand / collapse control (or spacer for leaves) */}
+        {hasChildren ? (
+          <button
+            type="button"
+            aria-label={isOpen ? "Collapse" : "Expand"}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(node.id);
+            }}
+            className="w-4 h-4 grid place-items-center flex-shrink-0 text-[var(--qz-fg-4)] hover:text-[var(--qz-fg-1)] bg-transparent border-0 p-0 cursor-pointer"
+          >
+            {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          </button>
+        ) : (
+          <span className="w-4 h-4 flex-shrink-0" />
+        )}
+
+        <Icon
+          size={14}
+          className={`flex-shrink-0 ${selected ? "text-[var(--qz-accent)]" : "text-[var(--qz-fg-4)]"}`}
+        />
+        <span className="flex-1 truncate">{node.name}</span>
+        {selected && <Check size={14} className="text-[var(--qz-accent)] flex-shrink-0" />}
+      </div>
+
+      {hasChildren &&
+        isOpen &&
+        node.children.map((child) => (
+          <TreeRow
+            key={child.id}
+            node={child}
+            depth={depth + 1}
+            expanded={expanded}
+            forceOpen={forceOpen}
+            currentId={currentId}
+            currentKind={currentKind}
+            onToggle={onToggle}
+            onSelect={onSelect}
+          />
+        ))}
+    </>
   );
 }

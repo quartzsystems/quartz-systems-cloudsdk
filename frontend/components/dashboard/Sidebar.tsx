@@ -9,6 +9,8 @@ import {
   Server,
   Building2,
   Shield,
+  SlidersHorizontal,
+  Plug,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -51,7 +53,16 @@ const ITEMS: NavItem[] = [
   { id: "networks", label: "Networks", icon: Network, href: "/networks" },
   { id: "infrastructure", label: "Infrastructure", icon: Server, href: "/infrastructure" },
   { id: "organizations", label: "Organizations", icon: Building2, href: "/organizations" },
-  { id: "admin", label: "Admin", icon: Shield, href: "/admin" },
+  {
+    id: "admin",
+    label: "Admin",
+    icon: Shield,
+    href: "/admin",
+    children: [
+      { id: "settings", label: "Settings", href: "/admin/settings", icon: SlidersHorizontal },
+      { id: "integrations", label: "Integrations", href: "/admin/integrations", icon: Plug },
+    ],
+  },
 ];
 
 /// Avatar initials: first letters of the full name's words when configured

@@ -1,12 +1,13 @@
 "use client";
 
-import { PagePlaceholder } from "@/components/dashboard/PagePlaceholder";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
+/// Admin has no landing view of its own — send visitors to Settings.
 export default function AdminPage() {
-  return (
-    <PagePlaceholder
-      title="Admin"
-      blurb="Operator accounts, roles, and deployment-wide settings."
-    />
-  );
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/admin/settings");
+  }, [router]);
+  return null;
 }

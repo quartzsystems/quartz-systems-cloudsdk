@@ -154,3 +154,13 @@ export async function provisioningApi<T = unknown>(
 ): Promise<T> {
   return apiFetch<T>(`/owprov${path.startsWith("/") ? path : `/${path}`}`, init);
 }
+
+/// Call the CloudSDK security service (owsec) through the authenticated backend
+/// proxy. owsec owns operator accounts. Same server-side bearer-token injection
+/// as `cloudsdkApi`.
+export async function securityApi<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  return apiFetch<T>(`/owsec${path.startsWith("/") ? path : `/${path}`}`, init);
+}

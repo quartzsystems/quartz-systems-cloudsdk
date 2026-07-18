@@ -36,6 +36,14 @@ pub async fn owprov(State(state): State<Arc<AppState>>, req: Request) -> Respons
     proxy(state, req, "/api/owprov", &base).await
 }
 
+/// Reverse-proxy `/api/owsec/*` to the CloudSDK security service (owsec). owsec
+/// owns operator accounts, so `/api/owsec/api/v1/users` backs the Settings →
+/// Security users table.
+pub async fn owsec(State(state): State<Arc<AppState>>, req: Request) -> Response {
+    let base = state.config.cloudsdk_owsec_url.clone();
+    proxy(state, req, "/api/owsec", &base).await
+}
+
 /// Shared proxy body: strip `prefix`, forward to `base`, inject the session's
 /// bearer token server-side. The browser never sees the token.
 async fn proxy(state: Arc<AppState>, req: Request, prefix: &'static str, base: &str) -> Response {

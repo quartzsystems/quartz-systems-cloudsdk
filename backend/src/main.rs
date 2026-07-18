@@ -84,6 +84,9 @@ async fn main() -> Result<()> {
         // owprov (Organizations/entities + Venues — the org switcher):
         .route("/api/owprov", any(proxy::owprov))
         .route("/api/owprov/*rest", any(proxy::owprov))
+        // owsec (operator accounts — Settings → Security):
+        .route("/api/owsec", any(proxy::owsec))
+        .route("/api/owsec/*rest", any(proxy::owsec))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth::require_auth,
