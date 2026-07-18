@@ -9,6 +9,7 @@ import { useOrganization } from "@/lib/OrganizationContext";
 import { fetchOrgSettings, saveOrgSettings } from "@/lib/settings";
 import { Button } from "@/components/ui/Button";
 import { MapPanel } from "@/components/admin/MapPanel";
+import { AddressAutocomplete } from "@/components/admin/AddressAutocomplete";
 
 /// Settings → Overview: editable Name + Address for the current Organization
 /// (or Venue), with a live map of the address on the right.
@@ -101,20 +102,11 @@ export function OverviewTab() {
 
         <div>
           <label className="block text-[12px] text-[var(--qz-fg-3)] mb-[6px]">Address</label>
-          <textarea
+          <AddressAutocomplete
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={setAddress}
             disabled={state === "loading"}
-            rows={3}
-            placeholder="Street, city, state, postal code"
-            className={`${fieldClass} resize-y`}
-            style={inputStyle}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--qz-accent)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--qz-border)")}
           />
-          <p className="text-[11px] text-[var(--qz-fg-4)] mt-[6px] m-0">
-            Used to locate this {current.kind === "venue" ? "venue" : "organization"} on the map.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 pt-1">

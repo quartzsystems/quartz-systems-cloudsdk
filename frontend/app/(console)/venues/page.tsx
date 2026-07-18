@@ -4,23 +4,24 @@
 // Copyright (C) 2026 Quartz Systems
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Search } from "lucide-react";
+import { Building2, Network, MapPin, Search } from "lucide-react";
 import { useOrganization } from "@/lib/OrganizationContext";
-import { collectVenues, fetchOrgTree, findNode, OrgNode } from "@/lib/organizations";
+import { fetchOrgTree, findNode, groupVenuesByOrg, VenueGroup } from "@/lib/organizations";
 
-/// Venues within the currently-scoped Organization, sourced from the CloudSDK
-/// provisioning service (owprov). Switching the Organization in the sidebar
-/// re-scopes this list.
+/// Venues within the currently-scoped Organization, grouped by the Organization
+/// they belong to: each Organization (the current one and its sub-organizations)
+/// is a heading with its venues listed beneath. Sourced from the CloudSDK
+/// provisioning service (owprov); switching the Organization re-scopes the list.
 export default function VenuesPage() {
   const { current } = useOrganization();
-  const [venues, setVenues] = useState<OrgNode[]>([]);
+  const [groups, setGroups] = useState<VenueGroup[]>([]);
   const [state, setState] = useState<"loading" | "idle" | "error">("loading");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!current) {
       setState("idle");
-      setVenues([]);
+      setGroups([]);
       return;
     }
     let cancelled = false;
@@ -29,7 +30,7 @@ export default function VenuesPage() {
       .then((tree) => {
         if (cancelled) return;
         const node = findNode(tree, current.id, current.kind);
-        setVenues(node ? collectVenues(node) : []);
+        setGroups(node ? groupVenuesByOrg(node) : []);
         setState("idle");
       })
       .catch(() => !cancelled && setState("error"));
@@ -38,9 +39,18 @@ export default function VenuesPage() {
     };
   }, [current?.id, current?.kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = useMemo(
-    () => (query ? venues.filter((v) => v.name.toLowerCase().includes(query.toLowerCase())) : venues),
-    [venues, query],
+  // Filter venues within each group by the query; drop groups left empty.
+  const filtered = useMemo(() => {
+    if (!query) return groups;
+    const q = query.toLowerCase();
+    return groups
+      .map((g) => ({ ...g, venues: g.venues.filter((v) => v.name.toLowerCase().includes(q)) }))
+      .filter((g) => g.venues.length > 0 || g.org.name.toLowerCase().includes(q));
+  }, [groups, query]);
+
+  const totalVenues = useMemo(
+    () => filtered.reduce((n, g) => n + g.venues.length, 0),
+    [filtered],
   );
 
   return (
@@ -72,7 +82,7 @@ export default function VenuesPage() {
       ) : (
         <>
           {/* Search + count */}
-          <div className="flex items-center justify-between mb-3 gap-3">
+          <div className="flex items-center justify-between mb-4 gap-3">
             <div className="flex items-center gap-2 bg-[var(--qz-input-bg)] border border-[var(--qz-border)] rounded-md px-[10px] py-[7px] w-[280px]">
               <Search size={13} className="text-[var(--qz-fg-4)] flex-shrink-0" />
               <input
@@ -83,7 +93,8 @@ export default function VenuesPage() {
               />
             </div>
             <span className="text-[12px] text-[var(--qz-fg-4)] font-mono">
-              {filtered.length} {filtered.length === 1 ? "venue" : "venues"}
+              {totalVenues} {totalVenues === 1 ? "venue" : "venues"} ·{" "}
+              {filtered.length} {filtered.length === 1 ? "organization" : "organizations"}
             </span>
           </div>
 
@@ -94,36 +105,65 @@ export default function VenuesPage() {
               </p>
             </div>
           ) : (
-            <div className="surface overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="qz-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Sub-venues</th>
-                      <th>ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((v) => (
-                      <tr key={v.id}>
-                        <td>
-                          <span className="inline-flex items-center gap-2">
-                            <Building2 size={14} className="text-[var(--qz-fg-4)]" />
-                            {v.name}
-                          </span>
-                        </td>
-                        <td>{v.children.filter((c) => c.kind === "venue").length || "—"}</td>
-                        <td className="mono">{v.id}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex flex-col gap-5">
+              {filtered.map((g) => (
+                <OrgVenues key={`${g.org.kind}:${g.org.id}`} group={g} />
+              ))}
             </div>
           )}
         </>
       )}
     </div>
+  );
+}
+
+/// One Organization heading with the venues that belong to it.
+function OrgVenues({ group }: { group: VenueGroup }) {
+  const { org, venues } = group;
+  const HeadingIcon = org.kind === "venue" ? Building2 : Network;
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-2">
+        <HeadingIcon size={15} className="text-[var(--qz-accent)]" />
+        <h2 className="text-[14px] font-semibold text-[var(--qz-fg-1)] m-0">{org.name}</h2>
+        <span className="text-[11px] text-[var(--qz-fg-4)] font-mono">
+          {venues.length} {venues.length === 1 ? "venue" : "venues"}
+        </span>
+      </div>
+
+      {venues.length === 0 ? (
+        <div className="surface p-4">
+          <p className="text-[12px] text-[var(--qz-fg-4)] m-0">No venues in this organization.</p>
+        </div>
+      ) : (
+        <div className="surface overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="qz-table">
+              <thead>
+                <tr>
+                  <th>Venue</th>
+                  <th>Sub-venues</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venues.map((v) => (
+                  <tr key={v.id}>
+                    <td>
+                      <span className="inline-flex items-center gap-2">
+                        <MapPin size={14} className="text-[var(--qz-fg-4)]" />
+                        {v.name}
+                      </span>
+                    </td>
+                    <td>{v.children.filter((c) => c.kind === "venue").length || "—"}</td>
+                    <td className="mono">{v.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

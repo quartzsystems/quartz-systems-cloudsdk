@@ -144,6 +144,54 @@ export function collectVenues(node: OrgNode): OrgNode[] {
   return out;
 }
 
+/// Every organization node in `node`'s subtree (includes `node` itself when it
+/// is an organization). Used by the Organizations page to list the entity
+/// hierarchy under the current scope.
+export function collectOrgs(node: OrgNode): OrgNode[] {
+  const out: OrgNode[] = [];
+  const walk = (n: OrgNode) => {
+    if (n.kind === "organization") out.push(n);
+    n.children.forEach(walk);
+  };
+  node.children.forEach(walk);
+  if (node.kind === "organization") out.unshift(node);
+  return out;
+}
+
+/** A heading (Organization or scoped Venue) with the venues that belong to it. */
+export interface VenueGroup {
+  org: OrgNode;
+  venues: OrgNode[];
+}
+
+/// Group the venues under `node` by their owning Organization: one group for
+/// `node` and one for each descendant Organization, each carrying the venues in
+/// that Organization's subtree (venues nested under venues are flattened up to
+/// their Organization). Lets the Venues page show every Organization and the
+/// venues under it.
+export function groupVenuesByOrg(node: OrgNode): VenueGroup[] {
+  const groups: VenueGroup[] = [];
+  const walk = (org: OrgNode) => {
+    const venues: OrgNode[] = [];
+    const gather = (n: OrgNode) => {
+      for (const child of n.children) {
+        if (child.kind === "venue") {
+          venues.push(child);
+          gather(child); // nested sub-venues belong to the same Organization
+        }
+      }
+    };
+    gather(org);
+    groups.push({ org, venues });
+    // Descendant Organizations get their own groups.
+    for (const child of org.children) {
+      if (child.kind === "organization") walk(child);
+    }
+  };
+  walk(node);
+  return groups;
+}
+
 /// Prune the tree to nodes matching `query`, keeping ancestors of any match.
 export function filterTree(nodes: OrgNode[], query: string): OrgNode[] {
   const q = query.toLowerCase();

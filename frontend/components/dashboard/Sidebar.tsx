@@ -14,6 +14,8 @@ import {
   Shield,
   SlidersHorizontal,
   Plug,
+  Layers,
+  Cpu,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -54,7 +56,17 @@ const ITEMS: NavItem[] = [
   { id: "venues", label: "Venues", icon: MapPin, href: "/venues" },
   { id: "clients", label: "Clients", icon: Users, href: "/clients" },
   { id: "networks", label: "Networks", icon: Network, href: "/networks" },
-  { id: "infrastructure", label: "Infrastructure", icon: Server, href: "/infrastructure" },
+  {
+    id: "infrastructure",
+    label: "Infrastructure",
+    icon: Server,
+    href: "/infrastructure",
+    children: [
+      { id: "infrastructure", label: "Infrastructure", href: "/infrastructure", icon: Server },
+      { id: "profiles", label: "Profiles", href: "/infrastructure/profiles", icon: Layers },
+      { id: "firmware", label: "Firmware", href: "/infrastructure/firmware", icon: Cpu },
+    ],
+  },
   { id: "organizations", label: "Organizations", icon: Building2, href: "/organizations" },
   {
     id: "admin",
