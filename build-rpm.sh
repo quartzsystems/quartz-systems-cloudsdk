@@ -9,8 +9,17 @@ name="quartz-cloudsdk-webui"
 version="0.1.0"
 
 echo "==> Building ${name}-${version}.rpm in fedora:40"
-docker run --rm -v "$here":/src -w /src fedora:40 bash -euo pipefail -c "
-  dnf -q -y install rpm-build rpmdevtools systemd-rpm-macros gcc cargo nodejs tar >/dev/null
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the container-side
+# paths (/src, -w) into Windows paths; it is an ignored no-op on Linux CI.
+MSYS_NO_PATHCONV=1 docker run --rm -v "$here":/src -w /src fedora:40 bash -euo pipefail -c "
+  # NOTE: Fedora's packaged 'cargo' is deliberately NOT installed — it lags the
+  # Rust version this backend's dependency tree requires (e.g. 'time' needs
+  # rustc >= 1.88). Install a current stable toolchain via rustup instead, the
+  # same way build-deb.sh relies on the 'rust:' base image. rpmbuild inherits
+  # PATH, so cargo is found by the spec's %build step.
+  dnf -q -y install rpm-build rpmdevtools systemd-rpm-macros gcc nodejs tar curl >/dev/null
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal >/dev/null 2>&1
+  export PATH=\"\$HOME/.cargo/bin:\$PATH\"
 
   # 1) Static-export the Next.js frontend into backend/www.
   ( cd frontend && rm -rf .next out && npm ci && npm run build )

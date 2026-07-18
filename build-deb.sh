@@ -8,7 +8,9 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 
 echo "==> Building quartz-cloudsdk-webui .deb in rust:1-bookworm"
-docker run --rm -v "$here":/src -w /src rust:1-bookworm bash -euo pipefail -c '
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the container-side
+# paths (/src, -w) into Windows paths; it is an ignored no-op on Linux CI.
+MSYS_NO_PATHCONV=1 docker run --rm -v "$here":/src -w /src rust:1-bookworm bash -euo pipefail -c '
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
   apt-get install -y --no-install-recommends build-essential debhelper devscripts ca-certificates curl gnupg >/dev/null
