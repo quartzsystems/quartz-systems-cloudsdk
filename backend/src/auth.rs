@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 //! Session authentication against the CloudSDK security service (owsec).
 //!
 //! Login flow:

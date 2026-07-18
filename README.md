@@ -90,12 +90,29 @@ Rust is too old for axum 0.7). Each script exports the frontend, compiles the
 backend, and drops the package in `dist/`.
 
 ```sh
-./build-deb.sh    # → dist/quartz-cloudsdk-webui_0.1.0-1_*.deb
-./build-rpm.sh    # → dist/quartz-cloudsdk-webui-0.1.0-1.*.rpm
+./build-deb.sh    # → dist/quartz-cloudsdk-webui_0.2.0-<count>_*.deb
+./build-rpm.sh    # → dist/quartz-cloudsdk-webui-0.2.0-<count>.g<hash>.*.rpm
 ```
 
 The Rust build uses only the `ring` crypto provider, so it needs just a C
 compiler — no cmake/nasm.
+
+### Versioning
+
+The repo-root [`VERSION`](VERSION) file is the single source of truth for the
+**base** version (currently `0.2.0`). The **package** version is derived at
+build time from git: the Debian revision and the RPM release use the commit
+count (`git rev-list --count HEAD`) plus the short hash, so **every commit
+produces a new, monotonically increasing package version** with no manual edits:
+
+| format | example        |
+| ------ | -------------- |
+| `.deb` | `0.2.0-5`      |
+| `.rpm` | `0.2.0-5.g6f9cf93` |
+
+Bump the base version (for a release) by editing `VERSION` — and keep
+`backend/Cargo.toml` and `frontend/package.json` in step. CI checks out full
+history (`fetch-depth: 0`) so the count is correct there too.
 
 ### Local development
 

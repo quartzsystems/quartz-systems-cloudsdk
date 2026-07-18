@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 //! Thin client for the CloudSDK security service (owsec). Handles the OAuth2
 //! sign-in exchange and token revocation. The bearer token owsec returns is
 //! held server-side (in the session store) and injected into proxied

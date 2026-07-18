@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # Full history so the build scripts' commit count (the package revision)
+        # is accurate and monotonic — a shallow clone always reports 1.
+        with:
+          fetch-depth: 0
 
       - name: Build .deb
         run: bash build-deb.sh
@@ -43,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build .rpm
         run: bash build-rpm.sh

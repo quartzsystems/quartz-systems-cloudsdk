@@ -1,5 +1,8 @@
 "use client";
 
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 export interface TabDef<T extends string> {
   id: T;
   label: string;

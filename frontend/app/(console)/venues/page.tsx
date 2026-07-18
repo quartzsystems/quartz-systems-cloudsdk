@@ -1,5 +1,8 @@
 "use client";
 
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 import { useEffect, useMemo, useState } from "react";
 import { Building2, Search } from "lucide-react";
 import { useOrganization } from "@/lib/OrganizationContext";

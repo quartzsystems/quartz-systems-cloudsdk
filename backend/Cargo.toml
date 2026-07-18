@@ -1,6 +1,9 @@
 [package]
 name = "quartz-cloudsdk-webui"
-version = "0.1.0"
+# Base version — keep in sync with the repo-root VERSION file (the single source
+# of truth). Package (.deb/.rpm) versions are derived from this + the git commit
+# count by the build scripts.
+version = "0.2.0"
 edition = "2021"
 description = "Quartz CloudSDK WebUI backend: TLS static server + CloudSDK API proxy"
 license = "GPL-2.0-or-later"

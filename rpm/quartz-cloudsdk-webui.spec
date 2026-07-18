@@ -7,8 +7,11 @@
 # BuildRequires — mirroring the .deb, where distro Rust is too old.
 
 Name:           quartz-cloudsdk-webui
-Version:        0.1.0
-Release:        1%{?dist}
+# The repo-root VERSION file is the single source of truth for the base version;
+# build-rpm.sh passes the git-derived values via --define. These fallbacks let a
+# bare `rpmbuild` still work.
+Version:        %{?pkgversion}%{!?pkgversion:0.2.0}
+Release:        %{?pkgrelease}%{!?pkgrelease:1}%{?dist}
 Summary:        Quartz CloudSDK web management interface
 
 License:        GPL-2.0-or-later

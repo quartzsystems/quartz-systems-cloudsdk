@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 // Operator accounts, read from the CloudSDK security service (owsec) via the
 // authenticated /api/owsec/* proxy. Backs the Settings → Security table.
 

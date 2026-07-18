@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 // Central API helpers for talking to the Quartz CloudSDK backend (axum).
 //
 // Auth is an httpOnly cookie set by the backend after it verifies the

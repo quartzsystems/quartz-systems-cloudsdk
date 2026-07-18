@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 // Data layer for the Organization switcher. In CloudSDK, "Organizations" are
 // owprov **entities** and "Venues" are owprov **venues**; both are reached
 // through the authenticated /api/owprov/* proxy.

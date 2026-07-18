@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 // Settings for the currently-scoped Organization (entity) or Venue. Name and
 // address live in owprov; both are reached through the /api/owprov/* proxy.
 

@@ -1,5 +1,8 @@
 "use client";
 
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 import { useState } from "react";
 import { Tabs } from "@/components/ui/Tabs";
 import { OverviewTab } from "@/components/admin/OverviewTab";

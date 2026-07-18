@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Manrope, JetBrains_Mono } from "next/font/google";

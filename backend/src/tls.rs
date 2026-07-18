@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright (C) 2026 Quartz Systems
+
 //! TLS for the WebUI listener on :4443. Loads the configured cert/key PEM pair,
 //! generating a self-signed pair on first start if either file is missing.
 //!
