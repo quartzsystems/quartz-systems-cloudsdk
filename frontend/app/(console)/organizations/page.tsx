@@ -9,8 +9,8 @@ import { useOrganization } from "@/lib/OrganizationContext";
 import { collectIds, fetchOrgTree, findNode, OrgNode } from "@/lib/organizations";
 
 /// The Organization (entity) hierarchy under the currently-scoped Organization,
-/// sourced from the CloudSDK provisioning service (owprov). Switching the
-/// Organization in the sidebar re-scopes this tree.
+/// with the venues that belong to each, sourced from the CloudSDK provisioning
+/// service (owprov). Switching the Organization in the sidebar re-scopes it.
 export default function OrganizationsPage() {
   const { current } = useOrganization();
   const [root, setRoot] = useState<OrgNode | null>(null);
@@ -47,12 +47,15 @@ export default function OrganizationsPage() {
       return next;
     });
 
-  // Sub-organizations directly under the current scope (the tree body).
   const childOrgs = useMemo(
     () => (root ? root.children.filter((c) => c.kind === "organization") : []),
     [root],
   );
-  const matches = (n: OrgNode) => n.name.toLowerCase().includes(query.toLowerCase());
+  const q = query.trim().toLowerCase();
+  const matches = (n: OrgNode) => n.name.toLowerCase().includes(q);
+  // Keep a node while searching if it or anything in its subtree matches.
+  const inSubtree = (n: OrgNode): boolean =>
+    matches(n) || n.children.some(inSubtree);
 
   return (
     <div className="p-[28px_36px]">
@@ -92,7 +95,7 @@ export default function OrganizationsPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search organizations…"
+                placeholder="Search organizations & venues…"
                 className="flex-1 bg-transparent outline-none text-[13px] text-[var(--qz-fg-1)] placeholder:text-[var(--qz-fg-4)]"
               />
             </div>
@@ -102,94 +105,132 @@ export default function OrganizationsPage() {
           </div>
 
           <div className="surface overflow-hidden">
-            {/* The scoped Organization itself, as the tree root. */}
-            <OrgRow node={root} depth={0} isRoot expanded={expanded} onToggle={toggle} query={query} />
-            {childOrgs.length === 0 && (
-              <p className="text-[13px] text-[var(--qz-fg-4)] m-0 px-4 py-4">
-                No sub-organizations under {root.name}.
-              </p>
-            )}
+            <TreeRow
+              node={root}
+              depth={0}
+              isRoot
+              expanded={expanded}
+              onToggle={toggle}
+              query={q}
+              matches={matches}
+              inSubtree={inSubtree}
+            />
           </div>
         </>
       )}
     </div>
   );
+}
 
-  function OrgRow({
-    node,
-    depth,
-    isRoot = false,
-    expanded,
-    onToggle,
-    query,
-  }: {
-    node: OrgNode;
-    depth: number;
-    isRoot?: boolean;
-    expanded: Set<string>;
-    onToggle: (id: string) => void;
-    query: string;
-  }) {
-    // Show only organization children in this view (venues live on the Venues page).
-    const childOrgs = node.children.filter((c) => c.kind === "organization");
-    const venueCount = node.children.filter((c) => c.kind === "venue").length;
-    const hasChildren = childOrgs.length > 0;
-    const isOpen = query.length > 0 || expanded.has(node.id) || isRoot;
-    // While searching, hide branches with no match anywhere in them.
-    const visibleChildren = query
-      ? childOrgs.filter(function keep(c): boolean {
-          return matches(c) || c.children.some((cc) => cc.kind === "organization" && keep(cc));
-        })
-      : childOrgs;
-    if (query && !isRoot && !matches(node) && visibleChildren.length === 0) return null;
+/// One row in the hierarchy — an Organization (with an expand control) or a
+/// venue leaf. Organizations render their sub-organizations and then their
+/// venues beneath them.
+function TreeRow({
+  node,
+  depth,
+  isRoot = false,
+  expanded,
+  onToggle,
+  query,
+  matches,
+  inSubtree,
+}: {
+  node: OrgNode;
+  depth: number;
+  isRoot?: boolean;
+  expanded: Set<string>;
+  onToggle: (id: string) => void;
+  query: string;
+  matches: (n: OrgNode) => boolean;
+  inSubtree: (n: OrgNode) => boolean;
+}) {
+  const isVenue = node.kind === "venue";
+  const childOrgs = node.children.filter((c) => c.kind === "organization");
+  const childVenues = node.children.filter((c) => c.kind === "venue");
+  const directVenueCount = childVenues.length;
+  const hasChildren = childOrgs.length > 0 || childVenues.length > 0;
+  const isOpen = query.length > 0 || isRoot || expanded.has(node.id);
 
-    return (
-      <>
-        <div
-          className="flex items-center gap-2 px-3 py-[10px] border-b border-[var(--qz-divider)]"
-          style={{ paddingLeft: 12 + depth * 18 }}
+  // While searching, hide branches with nothing matching in them.
+  if (query && !isRoot && !inSubtree(node)) return null;
+  const visibleOrgs = query ? childOrgs.filter(inSubtree) : childOrgs;
+  const visibleVenues = query ? childVenues.filter(matches) : childVenues;
+
+  const Icon = isVenue ? MapPin : Network;
+
+  return (
+    <>
+      <div
+        className="flex items-center gap-2 px-3 py-[10px] border-b border-[var(--qz-divider)]"
+        style={{ paddingLeft: 12 + depth * 18 }}
+      >
+        {hasChildren && !isVenue ? (
+          <button
+            type="button"
+            onClick={() => onToggle(node.id)}
+            aria-label={isOpen ? "Collapse" : "Expand"}
+            className="w-4 h-4 grid place-items-center flex-shrink-0 text-[var(--qz-fg-4)] hover:text-[var(--qz-fg-1)] bg-transparent border-0 p-0 cursor-pointer"
+          >
+            {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          </button>
+        ) : (
+          <span className="w-4 h-4 flex-shrink-0" />
+        )}
+        <Icon
+          size={14}
+          className={`flex-shrink-0 ${
+            isRoot ? "text-[var(--qz-accent)]" : isVenue ? "text-[var(--qz-fg-3)]" : "text-[var(--qz-fg-4)]"
+          }`}
+        />
+        <span
+          className={`flex-1 text-[13px] ${
+            isRoot ? "text-[var(--qz-fg-1)] font-medium" : "text-[var(--qz-fg-2)]"
+          }`}
         >
-          {hasChildren ? (
-            <button
-              type="button"
-              onClick={() => onToggle(node.id)}
-              aria-label={isOpen ? "Collapse" : "Expand"}
-              className="w-4 h-4 grid place-items-center flex-shrink-0 text-[var(--qz-fg-4)] hover:text-[var(--qz-fg-1)] bg-transparent border-0 p-0 cursor-pointer"
-            >
-              {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            </button>
-          ) : (
-            <span className="w-4 h-4 flex-shrink-0" />
-          )}
-          <Network
-            size={14}
-            className={`flex-shrink-0 ${isRoot ? "text-[var(--qz-accent)]" : "text-[var(--qz-fg-4)]"}`}
-          />
-          <span className={`flex-1 text-[13px] ${isRoot ? "text-[var(--qz-fg-1)] font-medium" : "text-[var(--qz-fg-2)]"}`}>
-            {node.name}
+          {node.name}
+        </span>
+        {!isVenue && directVenueCount > 0 && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-[var(--qz-fg-4)] font-mono">
+            <MapPin size={11} />
+            {directVenueCount}
           </span>
-          {venueCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--qz-fg-4)] font-mono">
-              <MapPin size={11} />
-              {venueCount}
-            </span>
-          )}
-          <span className="text-[11px] text-[var(--qz-fg-4)] font-mono mono ml-1">{node.id}</span>
-        </div>
+        )}
+        {isVenue && (
+          <span className="badge badge-muted">venue</span>
+        )}
+        <span className="text-[11px] text-[var(--qz-fg-4)] font-mono mono ml-1">{node.id}</span>
+      </div>
 
-        {hasChildren &&
-          isOpen &&
-          visibleChildren.map((child) => (
-            <OrgRow
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              expanded={expanded}
-              onToggle={onToggle}
-              query={query}
-            />
-          ))}
-      </>
-    );
-  }
+      {!isVenue &&
+        hasChildren &&
+        isOpen && (
+          <>
+            {visibleOrgs.map((child) => (
+              <TreeRow
+                key={child.id}
+                node={child}
+                depth={depth + 1}
+                expanded={expanded}
+                onToggle={onToggle}
+                query={query}
+                matches={matches}
+                inSubtree={inSubtree}
+              />
+            ))}
+            {visibleVenues.map((v) => (
+              <TreeRow
+                key={v.id}
+                node={v}
+                depth={depth + 1}
+                expanded={expanded}
+                onToggle={onToggle}
+                query={query}
+                matches={matches}
+                inSubtree={inSubtree}
+              />
+            ))}
+          </>
+        )}
+    </>
+  );
 }

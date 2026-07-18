@@ -29,6 +29,18 @@ pub struct Config {
     #[serde(default = "default_owprov_url")]
     pub cloudsdk_owprov_url: String,
 
+    /// Base URL the authenticated `/api/owfms/*` proxy forwards to. The CloudSDK
+    /// firmware service (owfms) owns firmware revisions and upgrade status,
+    /// backing the Infrastructure → Firmware view.
+    #[serde(default = "default_owfms_url")]
+    pub cloudsdk_owfms_url: String,
+
+    /// Base URL the authenticated `/api/owanalytics/*` proxy forwards to. The
+    /// CloudSDK analytics service (owanalytics) owns venue boards and historical
+    /// time series, backing the Dashboard's alarms and Historical Trends.
+    #[serde(default = "default_owanalytics_url")]
+    pub cloudsdk_owanalytics_url: String,
+
     /// Accept self-signed TLS from the CloudSDK services. They are reached over
     /// loopback and typically serve their own self-signed certificates, so this
     /// is true by default. Set false if you front them with a trusted PKI.
@@ -75,6 +87,14 @@ fn default_api_url() -> String {
 fn default_owprov_url() -> String {
     // owprov (the CloudSDK provisioning service) default REST port.
     "https://127.0.0.1:16005".to_string()
+}
+fn default_owfms_url() -> String {
+    // owfms (the CloudSDK firmware service) default REST port.
+    "https://127.0.0.1:16004".to_string()
+}
+fn default_owanalytics_url() -> String {
+    // owanalytics (the CloudSDK analytics service) default REST port.
+    "https://127.0.0.1:16009".to_string()
 }
 fn default_accept_invalid_certs() -> bool {
     true

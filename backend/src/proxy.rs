@@ -47,6 +47,22 @@ pub async fn owsec(State(state): State<Arc<AppState>>, req: Request) -> Response
     proxy(state, req, "/api/owsec", &base).await
 }
 
+/// Reverse-proxy `/api/owfms/*` to the CloudSDK firmware service (owfms). owfms
+/// owns firmware revisions and upgrade status, backing the Infrastructure →
+/// Firmware view.
+pub async fn owfms(State(state): State<Arc<AppState>>, req: Request) -> Response {
+    let base = state.config.cloudsdk_owfms_url.clone();
+    proxy(state, req, "/api/owfms", &base).await
+}
+
+/// Reverse-proxy `/api/owanalytics/*` to the CloudSDK analytics service
+/// (owanalytics). owanalytics owns venue boards and historical time series,
+/// backing the Dashboard's alarms and Historical Trends.
+pub async fn owanalytics(State(state): State<Arc<AppState>>, req: Request) -> Response {
+    let base = state.config.cloudsdk_owanalytics_url.clone();
+    proxy(state, req, "/api/owanalytics", &base).await
+}
+
 /// Shared proxy body: strip `prefix`, forward to `base`, inject the session's
 /// bearer token server-side. The browser never sees the token.
 async fn proxy(state: Arc<AppState>, req: Request, prefix: &'static str, base: &str) -> Response {

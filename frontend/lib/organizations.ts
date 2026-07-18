@@ -158,6 +158,13 @@ export function collectOrgs(node: OrgNode): OrgNode[] {
   return out;
 }
 
+/// Whether `id` is a top-level (root) Organization in the forest. The root
+/// entity owns the deployment's global/unowned operator accounts, so the
+/// Security tab widens its user filter when scoped to it.
+export function isRootOrg(nodes: OrgNode[], id: string): boolean {
+  return nodes.some((n) => n.id === id && n.kind === "organization");
+}
+
 /** A heading (Organization or scoped Venue) with the venues that belong to it. */
 export interface VenueGroup {
   org: OrgNode;

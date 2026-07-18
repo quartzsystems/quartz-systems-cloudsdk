@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, UserPlus } from "lucide-react";
 import { CloudUser, fetchUsers } from "@/lib/users";
+import { fetchOrgTree, isRootOrg } from "@/lib/organizations";
 import { useOrganization } from "@/lib/OrganizationContext";
 import { Button } from "@/components/ui/Button";
 import { UserDrawer } from "@/components/admin/UserDrawer";
@@ -36,12 +37,19 @@ export function SecurityTab() {
       return;
     }
     setState("loading");
-    fetchUsers(orgId)
-      .then((u) => {
-        setUsers(u);
-        setState("idle");
-      })
-      .catch(() => setState("error"));
+    // The root entity owns global/unowned operators, so widen the filter there.
+    // owprov being unreachable just means "not root" — owned users still load.
+    (async () => {
+      let includeUnowned = false;
+      try {
+        includeUnowned = isRootOrg(await fetchOrgTree(), orgId);
+      } catch {
+        /* treat as a non-root org */
+      }
+      const u = await fetchUsers({ orgId, includeUnowned });
+      setUsers(u);
+      setState("idle");
+    })().catch(() => setState("error"));
   }, [orgId]);
 
   useEffect(() => {

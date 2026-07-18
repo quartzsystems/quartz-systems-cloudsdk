@@ -167,3 +167,23 @@ export async function securityApi<T = unknown>(
 ): Promise<T> {
   return apiFetch<T>(`/owsec${path.startsWith("/") ? path : `/${path}`}`, init);
 }
+
+/// Call the CloudSDK firmware service (owfms) through the authenticated backend
+/// proxy. owfms owns firmware revisions and upgrade status (Infrastructure →
+/// Firmware). Same server-side bearer-token injection as `cloudsdkApi`.
+export async function firmwareApi<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  return apiFetch<T>(`/owfms${path.startsWith("/") ? path : `/${path}`}`, init);
+}
+
+/// Call the CloudSDK analytics service (owanalytics) through the authenticated
+/// backend proxy. owanalytics owns venue boards and historical time series (the
+/// Dashboard). Same server-side bearer-token injection as `cloudsdkApi`.
+export async function analyticsApi<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  return apiFetch<T>(`/owanalytics${path.startsWith("/") ? path : `/${path}`}`, init);
+}

@@ -113,12 +113,20 @@ function extractUsers(raw: unknown): OwsecUser[] {
   return [];
 }
 
-/// All operator accounts owned by `orgId` (the currently-scoped Organization).
-/// Passing no id returns every account (used only outside an org scope).
-export async function fetchUsers(orgId?: string): Promise<CloudUser[]> {
+/// Operator accounts for the Security tab. Scoped to `orgId` (the currently
+/// selected Organization); `includeUnowned` additionally surfaces global
+/// operators (accounts with no `owner`) — used when scoped to the root entity,
+/// which owns the deployment's global operators. Omitting `orgId` returns every
+/// account.
+export async function fetchUsers(opts?: {
+  orgId?: string;
+  includeUnowned?: boolean;
+}): Promise<CloudUser[]> {
+  const { orgId, includeUnowned } = opts ?? {};
   const raw = await securityApi<unknown>("/api/v1/users");
   const users = extractUsers(raw).map(normalize);
-  return orgId ? users.filter((u) => u.owner === orgId) : users;
+  if (!orgId) return users;
+  return users.filter((u) => u.owner === orgId || (includeUnowned && !u.owner));
 }
 
 /// Body shared by create + update. owsec expects `userRole`, notes as objects,

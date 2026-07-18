@@ -90,6 +90,12 @@ async fn main() -> Result<()> {
         // owsec (operator accounts — Settings → Security):
         .route("/api/owsec", any(proxy::owsec))
         .route("/api/owsec/*rest", any(proxy::owsec))
+        // owfms (firmware revisions + upgrade status — Infrastructure → Firmware):
+        .route("/api/owfms", any(proxy::owfms))
+        .route("/api/owfms/*rest", any(proxy::owfms))
+        // owanalytics (venue boards + historical trends — Dashboard):
+        .route("/api/owanalytics", any(proxy::owanalytics))
+        .route("/api/owanalytics/*rest", any(proxy::owanalytics))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth::require_auth,
