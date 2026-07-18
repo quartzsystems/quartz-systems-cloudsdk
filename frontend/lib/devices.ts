@@ -95,6 +95,47 @@ export function clientCount(d: Device): number {
   return d.associations2G + d.associations5G + d.associations6G;
 }
 
+/** Physical class of a piece of infrastructure. */
+export type DeviceClass = "ap" | "switch" | "gateway";
+
+/// Best-effort device class from owgw's `deviceType` model string. owgw doesn't
+/// report a class, so we key off the vendor/model conventions OpenWiFi devices
+/// use (switch families carry "ecs"/"switch"/"sw"; gateways carry
+/// "gw"/"router"). Anything unrecognised is treated as an access point, which is
+/// the overwhelming majority of managed infrastructure. Heuristic by nature —
+/// refine the keyword sets as new hardware appears.
+export function deviceClass(deviceType?: string): DeviceClass {
+  const t = (deviceType ?? "").toLowerCase();
+  if (t.includes("switch") || /(^|[_-])(ecs|sw)\d|(^|[_-])sw($|[_-])/.test(t)) return "switch";
+  if (t.includes("gateway") || t.includes("router") || /(^|[_-])(gw|rtr)($|[_-\d])/.test(t))
+    return "gateway";
+  return "ap";
+}
+
+const CLASS_LABEL: Record<DeviceClass, [singular: string, plural: string]> = {
+  ap: ["AP", "APs"],
+  switch: ["Switch", "Switches"],
+  gateway: ["Gateway", "Gateways"],
+};
+
+/** Human label for a device class, pluralised for `count`. */
+export function deviceClassLabel(klass: DeviceClass, count = 1): string {
+  const [one, many] = CLASS_LABEL[klass];
+  return count === 1 ? one : many;
+}
+
+/// Compact inventory summary of a device list by class, e.g. "1 AP, 2 Switches".
+/// Empty list → "" (callers decide what to show for no infrastructure).
+export function inventorySummary(devices: Device[]): string {
+  const counts: Record<DeviceClass, number> = { ap: 0, switch: 0, gateway: 0 };
+  for (const d of devices) counts[deviceClass(d.deviceType)] += 1;
+  const order: DeviceClass[] = ["ap", "switch", "gateway"];
+  return order
+    .filter((k) => counts[k] > 0)
+    .map((k) => `${counts[k]} ${deviceClassLabel(k, counts[k])}`)
+    .join(", ");
+}
+
 /// Every device with live status. Returns an empty list (never throws) when
 /// owgw is unreachable, so callers degrade to zeros rather than failing.
 export async function fetchDevices(): Promise<Device[]> {

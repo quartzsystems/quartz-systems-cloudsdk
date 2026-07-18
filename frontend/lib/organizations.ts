@@ -112,6 +112,16 @@ export async function fetchOrgTree(): Promise<OrgNode[]> {
   return buildTree(entities, venues);
 }
 
+/// Create a new Organization (owprov entity) under `parent`. owprov follows the
+/// TIP convention of POSTing to the `/0` id with an `id` of "0"; the service
+/// assigns the real id. An empty `parent` creates a top-level Organization.
+export async function createOrganization(name: string, parent: string): Promise<void> {
+  await provisioningApi("/api/v1/entity/0", {
+    method: "POST",
+    body: JSON.stringify({ id: "0", name, parent }),
+  });
+}
+
 /// Every node id in the tree (used to default-expand the hierarchy).
 export function collectIds(nodes: OrgNode[], acc: string[] = []): string[] {
   for (const n of nodes) {
