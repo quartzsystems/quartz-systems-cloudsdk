@@ -2,39 +2,56 @@
 
 import {
   Gauge,
-  Router,
+  Bell,
+  MapPin,
   Users,
-  ClipboardList,
-  HardDriveDownload,
-  BarChart3,
-  Settings,
-  Search,
+  Network,
+  Server,
+  Building2,
+  Shield,
   LogOut,
+  ChevronDown,
+  ChevronRight,
   LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthUserInfo, getCurrentUser, logout as apiLogout } from "@/lib/api";
+import { OrganizationSwitcher } from "@/components/dashboard/OrganizationSwitcher";
+
+interface NavChild {
+  id: string;
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
 
 interface NavItem {
   id: string;
   label: string;
   icon: LucideIcon;
   href: string;
+  children?: NavChild[];
 }
 
-// CloudSDK (TIP OpenWiFi) domains. These are placeholder routes for now — the
-// real console views land on top of the CloudSDK proxy next. Add sub-menus as
-// the pages arrive (see quartzfire-webui's Sidebar for the nested pattern).
 const ITEMS: NavItem[] = [
-  { id: "overview", label: "Dashboard", icon: Gauge, href: "/dashboard" },
-  { id: "devices", label: "Access Points", icon: Router, href: "/devices" },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: Gauge,
+    href: "/dashboard",
+    children: [
+      { id: "overview", label: "Dashboard", href: "/dashboard", icon: Gauge },
+      { id: "notifications", label: "Notifications", href: "/dashboard/notifications", icon: Bell },
+    ],
+  },
+  { id: "venues", label: "Venues", icon: MapPin, href: "/venues" },
   { id: "clients", label: "Clients", icon: Users, href: "/clients" },
-  { id: "provisioning", label: "Provisioning", icon: ClipboardList, href: "/provisioning" },
-  { id: "firmware", label: "Firmware", icon: HardDriveDownload, href: "/firmware" },
-  { id: "analytics", label: "Analytics", icon: BarChart3, href: "/analytics" },
-  { id: "system", label: "System", icon: Settings, href: "/system" },
+  { id: "networks", label: "Networks", icon: Network, href: "/networks" },
+  { id: "infrastructure", label: "Infrastructure", icon: Server, href: "/infrastructure" },
+  { id: "organizations", label: "Organizations", icon: Building2, href: "/organizations" },
+  { id: "admin", label: "Admin", icon: Shield, href: "/admin" },
 ];
 
 /// Avatar initials: first letters of the full name's words when configured
@@ -58,8 +75,16 @@ export function Sidebar() {
     setUser(getCurrentUser());
   }, []);
 
+  // Exact match for a leaf; prefix match for section parents (but not for
+  // "/dashboard", which would swallow "/dashboard/notifications").
   const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+    pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
+
+  // Expandable submenus: open if explicitly toggled, else default-open on the
+  // active subtree.
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const isOpen = (item: NavItem) =>
+    openMenus[item.id] ?? item.children!.some((c) => pathname === c.href);
 
   const logout = async () => {
     await apiLogout();
@@ -96,23 +121,56 @@ export function Sidebar() {
         </span>
       </div>
 
-      {/* Search (placeholder — a command palette lands with the console views) */}
+      {/* Organization switcher (replaces the search bar) */}
       <div className="px-3 py-3 flex-shrink-0">
-        <div className="w-full flex items-center gap-2 bg-[var(--qz-input-bg)] border border-[var(--qz-border)] rounded-md px-[10px] py-[7px] text-left opacity-60">
-          <Search size={13} className="text-[var(--qz-fg-4)] flex-shrink-0" />
-          <span
-            className="flex-1 text-[13px] text-[var(--qz-fg-4)]"
-            style={{ fontFamily: "var(--qz-font-sans)" }}
-          >
-            Search…
-          </span>
-        </div>
+        <OrganizationSwitcher />
       </div>
 
       {/* Nav */}
       <div className="flex-1 min-h-0 overflow-auto px-3 flex flex-col gap-[2px] pt-1">
         {ITEMS.map((item) => {
           const Icon = item.icon;
+
+          if (item.children) {
+            const open = isOpen(item);
+            return (
+              <div key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenMenus((p) => ({ ...p, [item.id]: !open }))}
+                  className={itemClass(false)}
+                >
+                  <Icon size={16} />
+                  <span className="flex-1">{item.label}</span>
+                  {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+                {open && (
+                  <div className="flex flex-col gap-[2px] mt-[2px] ml-[26px]">
+                    {item.children.map((child) => {
+                      const active = pathname === child.href;
+                      const ChildIcon = child.icon;
+                      return (
+                        <Link
+                          key={child.id}
+                          href={child.href}
+                          className={[
+                            "flex items-center gap-[9px] px-[10px] py-[7px] rounded-md text-[13px] font-medium border transition-all duration-[120ms] no-underline",
+                            active
+                              ? "bg-[var(--qz-accent-soft)] text-[var(--qz-accent)] border-[color-mix(in_oklab,var(--qz-accent)_30%,transparent)]"
+                              : "text-[var(--qz-fg-3)] border-transparent hover:text-[var(--qz-fg-1)] hover:bg-[color-mix(in_oklab,white_4%,transparent)]",
+                          ].join(" ")}
+                        >
+                          <ChildIcon size={15} />
+                          <span>{child.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link key={item.id} href={item.href} className={itemClass(isActive(item.href))}>
               <Icon size={16} />

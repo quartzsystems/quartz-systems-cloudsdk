@@ -16,10 +16,15 @@ pub struct Config {
     pub cloudsdk_owsec_url: String,
 
     /// Base URL the authenticated `/api/cloudsdk/*` proxy forwards to. Defaults
-    /// to the CloudSDK gateway (owgw). Point this at whichever CloudSDK
-    /// microservice the console needs to reach.
+    /// to the CloudSDK gateway (owgw) — device/gateway operations.
     #[serde(default = "default_api_url")]
     pub cloudsdk_api_url: String,
+
+    /// Base URL the authenticated `/api/owprov/*` proxy forwards to. The
+    /// CloudSDK provisioning service (owprov) owns Organizations (entities) and
+    /// Venues, which the console's Organization switcher reads.
+    #[serde(default = "default_owprov_url")]
+    pub cloudsdk_owprov_url: String,
 
     /// Accept self-signed TLS from the CloudSDK services. They are reached over
     /// loopback and typically serve their own self-signed certificates, so this
@@ -63,6 +68,10 @@ fn default_owsec_url() -> String {
 fn default_api_url() -> String {
     // owgw (the CloudSDK gateway) default REST port.
     "https://127.0.0.1:16002".to_string()
+}
+fn default_owprov_url() -> String {
+    // owprov (the CloudSDK provisioning service) default REST port.
+    "https://127.0.0.1:16005".to_string()
 }
 fn default_accept_invalid_certs() -> bool {
     true

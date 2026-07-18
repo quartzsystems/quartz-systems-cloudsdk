@@ -10,6 +10,9 @@ listen = "0.0.0.0:4443"
 cloudsdk_owsec_url = "https://127.0.0.1:16001"
 # Base URL the authenticated /api/cloudsdk/* proxy forwards to (owgw by default).
 cloudsdk_api_url   = "https://127.0.0.1:16002"
+# Provisioning service (owprov): owns Organizations (entities) + Venues, reached
+# via the /api/owprov/* proxy (backs the console's Organization switcher).
+cloudsdk_owprov_url = "https://127.0.0.1:16005"
 # CloudSDK services usually serve self-signed certs over loopback — accept them.
 cloudsdk_accept_invalid_certs = true
 

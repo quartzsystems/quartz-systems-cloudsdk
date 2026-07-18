@@ -77,9 +77,13 @@ async fn main() -> Result<()> {
     // made without one.
     let protected = Router::new()
         .route("/api/auth/me", get(auth::me))
-        // Static routes win over the `/api/cloudsdk/*rest` proxy wildcard.
-        .route("/api/cloudsdk", any(proxy::handler))
-        .route("/api/cloudsdk/*rest", any(proxy::handler))
+        // Static routes win over the proxy wildcards.
+        // owgw (gateway/device operations):
+        .route("/api/cloudsdk", any(proxy::cloudsdk))
+        .route("/api/cloudsdk/*rest", any(proxy::cloudsdk))
+        // owprov (Organizations/entities + Venues — the org switcher):
+        .route("/api/owprov", any(proxy::owprov))
+        .route("/api/owprov/*rest", any(proxy::owprov))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth::require_auth,

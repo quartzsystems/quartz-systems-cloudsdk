@@ -144,3 +144,13 @@ export async function cloudsdkApi<T = unknown>(
 ): Promise<T> {
   return apiFetch<T>(`/cloudsdk${path.startsWith("/") ? path : `/${path}`}`, init);
 }
+
+/// Call the CloudSDK provisioning service (owprov) through the authenticated
+/// backend proxy. owprov owns Organizations (entities) and Venues. Same
+/// server-side bearer-token injection as `cloudsdkApi`.
+export async function provisioningApi<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  return apiFetch<T>(`/owprov${path.startsWith("/") ? path : `/${path}`}`, init);
+}

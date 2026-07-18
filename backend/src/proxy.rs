@@ -21,18 +21,29 @@ const STRIP_HEADERS: &[&str] = &[
     "upgrade",
 ];
 
-/// Reverse-proxy any `/api/cloudsdk/*` request to the configured CloudSDK API,
-/// injecting the session's bearer token server-side. The browser never sees the
-/// token.
-///
-/// The incoming path `/api/cloudsdk/api/v1/devices` maps to
-/// `<cloudsdk_api_url>/api/v1/devices`.
-pub async fn handler(State(state): State<Arc<AppState>>, req: Request) -> Response {
+/// Reverse-proxy `/api/cloudsdk/*` to the CloudSDK gateway (owgw). The incoming
+/// path `/api/cloudsdk/api/v1/devices` maps to `<cloudsdk_api_url>/api/v1/devices`.
+pub async fn cloudsdk(State(state): State<Arc<AppState>>, req: Request) -> Response {
+    let base = state.config.cloudsdk_api_url.clone();
+    proxy(state, req, "/api/cloudsdk", &base).await
+}
+
+/// Reverse-proxy `/api/owprov/*` to the CloudSDK provisioning service (owprov).
+/// The incoming path `/api/owprov/api/v1/entity` maps to
+/// `<cloudsdk_owprov_url>/api/v1/entity`. Backs the Organization switcher.
+pub async fn owprov(State(state): State<Arc<AppState>>, req: Request) -> Response {
+    let base = state.config.cloudsdk_owprov_url.clone();
+    proxy(state, req, "/api/owprov", &base).await
+}
+
+/// Shared proxy body: strip `prefix`, forward to `base`, inject the session's
+/// bearer token server-side. The browser never sees the token.
+async fn proxy(state: Arc<AppState>, req: Request, prefix: &'static str, base: &str) -> Response {
     // `require_auth` guarantees a session in the extensions.
     let Some(session) = req.extensions().get::<Session>().cloned() else {
         return (StatusCode::UNAUTHORIZED, "no session").into_response();
     };
-    match forward(state, req, session).await {
+    match forward(state, req, session, prefix, base).await {
         Ok(resp) => resp,
         Err(e) => {
             tracing::error!("proxy error: {e:#}");
@@ -45,23 +56,17 @@ async fn forward(
     state: Arc<AppState>,
     req: Request,
     session: Session,
+    prefix: &'static str,
+    base: &str,
 ) -> anyhow::Result<Response> {
     let (parts, body) = req.into_parts();
 
-    // Strip the `/api/cloudsdk` prefix; the CloudSDK endpoints live at the root
-    // of the upstream base URL.
-    let path = parts
-        .uri
-        .path_and_query()
-        .map(|pq| pq.as_str())
-        .unwrap_or("/api/cloudsdk");
-    let path = path.strip_prefix("/api/cloudsdk").unwrap_or(path);
+    // Strip the route prefix; the CloudSDK endpoints live at the root of the
+    // upstream base URL.
+    let path = parts.uri.path_and_query().map(|pq| pq.as_str()).unwrap_or(prefix);
+    let path = path.strip_prefix(prefix).unwrap_or(path);
     let path = if path.is_empty() { "/" } else { path };
-    let url = format!(
-        "{}{}",
-        state.config.cloudsdk_api_url.trim_end_matches('/'),
-        path
-    );
+    let url = format!("{}{}", base.trim_end_matches('/'), path);
 
     let body_bytes = axum::body::to_bytes(body, usize::MAX).await?.to_vec();
 
