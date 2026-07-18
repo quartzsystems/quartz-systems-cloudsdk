@@ -11,7 +11,12 @@
 // "critical" one). When owgw is unreachable the venues still list and the
 // counters read zero, matching the app's degrade-don't-fail pattern.
 
-import { cloudsdkApi } from "@/lib/api";
+import {
+  clientCount,
+  Device,
+  fetchDevices,
+  groupDevicesByVenue,
+} from "@/lib/devices";
 import { collectVenues, OrgNode } from "@/lib/organizations";
 
 export type Severity = "critical" | "major";
@@ -44,59 +49,14 @@ export interface DashboardData {
   venues: VenueRow[];
 }
 
-interface OwgwDevice {
-  serialNumber?: string;
-  venue?: string;
-  connected?: boolean;
-  associations_2G?: number;
-  associations_5G?: number;
-  associations_6G?: number;
-  // Some deployments report firmware-upgrade failure inline.
-  upgradeStatus?: string;
-}
-
-/// owgw returns devices under `devicesWithStatus` / `devices`; tolerate a bare
-/// array too.
-function extractDevices(raw: unknown): OwgwDevice[] {
-  if (Array.isArray(raw)) return raw as OwgwDevice[];
-  if (raw && typeof raw === "object") {
-    const obj = raw as Record<string, unknown>;
-    for (const key of ["devicesWithStatus", "devices"]) {
-      if (Array.isArray(obj[key])) return obj[key] as OwgwDevice[];
-    }
-  }
-  return [];
-}
-
-function clientCount(d: OwgwDevice): number {
-  return (d.associations_2G ?? 0) + (d.associations_5G ?? 0) + (d.associations_6G ?? 0);
-}
-
-/// Live device snapshot keyed by venue id. Empty when owgw is unreachable.
-async function fetchDevicesByVenue(): Promise<Map<string, OwgwDevice[]>> {
-  const byVenue = new Map<string, OwgwDevice[]>();
-  try {
-    const raw = await cloudsdkApi<unknown>("/api/v1/devices?deviceWithStatus=true&limit=1000");
-    for (const d of extractDevices(raw)) {
-      if (!d.venue) continue;
-      const list = byVenue.get(d.venue) ?? [];
-      list.push(d);
-      byVenue.set(d.venue, list);
-    }
-  } catch {
-    /* owgw down — leave the map empty; the dashboard degrades to zeros. */
-  }
-  return byVenue;
-}
-
 /// Assemble the Organization-scoped dashboard: every venue under `orgNode`,
 /// enriched with live owgw device state.
 export async function loadDashboard(orgNode: OrgNode): Promise<DashboardData> {
   const venues = collectVenues(orgNode);
-  const byVenue = await fetchDevicesByVenue();
+  const byVenue = groupDevicesByVenue(await fetchDevices());
 
   const rows: VenueRow[] = venues.map((v) => {
-    const devices = byVenue.get(v.id) ?? [];
+    const devices: Device[] = byVenue.get(v.id) ?? [];
     const infraTotal = devices.length;
     const infraOnline = devices.filter((d) => d.connected).length;
     const offline = infraTotal - infraOnline;

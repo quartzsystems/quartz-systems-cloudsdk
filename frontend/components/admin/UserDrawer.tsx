@@ -137,6 +137,19 @@ export function UserDrawer({
             />
           </Field>
 
+          {isEdit && (
+            <div className="flex items-center gap-2 -mt-1">
+              <span className="text-[12px] text-[var(--qz-fg-3)]">Email status:</span>
+              {user!.emailVerified === undefined ? (
+                <span className="badge badge-muted">Unknown</span>
+              ) : user!.emailVerified ? (
+                <span className="badge badge-ok">Verified</span>
+              ) : (
+                <span className="badge badge-warn">Pending validation</span>
+              )}
+            </div>
+          )}
+
           <Field label="Name">
             <input
               value={draft.name}

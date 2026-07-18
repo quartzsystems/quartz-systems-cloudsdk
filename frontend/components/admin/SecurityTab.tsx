@@ -18,6 +18,20 @@ function formatLastLogin(epoch?: number): string {
   return d.toLocaleString();
 }
 
+/// Email-validation state for an operator account. `undefined` means the
+/// deployment doesn't report it (validation disabled) — shown muted rather than
+/// implying either state.
+function EmailStatusBadge({ verified }: { verified?: boolean }) {
+  if (verified === undefined) {
+    return <span className="badge badge-muted">Unknown</span>;
+  }
+  return verified ? (
+    <span className="badge badge-ok">Verified</span>
+  ) : (
+    <span className="badge badge-warn">Pending</span>
+  );
+}
+
 /// Admin → Settings → Security: operator accounts (owsec) scoped to the
 /// currently-selected Organization, with create/edit/delete via a slide-over.
 export function SecurityTab() {
@@ -112,6 +126,7 @@ export function SecurityTab() {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Email</th>
                   <th>Last login</th>
                   <th>Status</th>
                 </tr>
@@ -122,6 +137,9 @@ export function SecurityTab() {
                     <td>{u.name || "—"}</td>
                     <td className="mono">{u.email || "—"}</td>
                     <td>{u.role || "—"}</td>
+                    <td>
+                      <EmailStatusBadge verified={u.emailVerified} />
+                    </td>
                     <td>{formatLastLogin(u.lastLogin)}</td>
                     <td>
                       <span className={`badge ${u.suspended ? "badge-crit" : "badge-ok"}`}>

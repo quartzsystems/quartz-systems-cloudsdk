@@ -42,6 +42,13 @@ export interface CloudUser {
   suspended?: boolean;
   /** Force a password change on next login. */
   changePassword?: boolean;
+  /**
+   * Whether the operator has validated their email address. owsec tracks this
+   * as `waitingForEmailCheck` (true while a validation is still pending), which
+   * we invert here. `undefined` when the deployment doesn't report it (email
+   * validation disabled), so the UI can show "Unknown" rather than guess.
+   */
+  emailVerified?: boolean;
 }
 
 /// Fields the create/edit drawer collects. `password` is only sent when set
@@ -74,6 +81,7 @@ interface OwsecUser {
   lastLogin?: number;
   suspended?: boolean;
   changePassword?: boolean;
+  waitingForEmailCheck?: boolean;
 }
 
 /// owsec carries notes as a list of `{ note }` objects; flatten to a string for
@@ -101,6 +109,8 @@ function normalize(u: OwsecUser): CloudUser {
     lastLogin: u.lastLogin,
     suspended: u.suspended,
     changePassword: u.changePassword,
+    emailVerified:
+      u.waitingForEmailCheck === undefined ? undefined : !u.waitingForEmailCheck,
   };
 }
 
