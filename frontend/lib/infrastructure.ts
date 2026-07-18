@@ -62,13 +62,18 @@ export async function loadInfrastructure(node: OrgNode): Promise<InfraBoard> {
 
 // ── Adding infrastructure ────────────────────────────────────────────────────
 
-/** Device types offered when owfms/the fleet report none. */
+/** Device types offered when owfms/the fleet report none. Covers both access
+ *  points (EAP/ECW families) and switches (ECS family) so either can be added
+ *  even when owfms is quiet; `deviceClass` classifies each on the resulting row. */
 const DEFAULT_DEVICE_TYPES = [
   "EAP-101",
   "EAP-102",
   "EAP-104",
   "ECW5211",
   "ECW5410",
+  "ECS4100-12PH",
+  "ECS4125-10P",
+  "ECS4510-28F",
 ];
 
 function extractStrings(raw: unknown, key: string): string[] {
@@ -126,12 +131,19 @@ export function isValidMac(mac: string): boolean {
   return normalizeSerial(mac).length === 12;
 }
 
-/// Register a device by MAC. owprov keys the inventory record on the serial
-/// (the MAC, hex only), which is all the create needs.
-export async function createInfrastructure(mac: string): Promise<void> {
-  const serial = normalizeSerial(mac);
+/// Register a device from the Add-infrastructure form. owprov keys the inventory
+/// record on the serial (the MAC, hex only); the device type is persisted so the
+/// record classifies correctly (AP vs. switch) before the hardware first
+/// connects, and the venue/name are carried through when supplied.
+export async function createInfrastructure(draft: InfraDraft): Promise<void> {
+  const serial = normalizeSerial(draft.mac);
+  const body: Record<string, string> = { serialNumber: serial };
+  const name = draft.name.trim();
+  if (name) body.name = name;
+  if (draft.deviceType) body.deviceType = draft.deviceType;
+  if (draft.venue) body.venue = draft.venue;
   await provisioningApi(`/api/v1/inventory/${serial}`, {
     method: "POST",
-    body: JSON.stringify({ serialNumber: serial }),
+    body: JSON.stringify(body),
   });
 }

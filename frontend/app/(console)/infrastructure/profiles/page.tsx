@@ -23,6 +23,11 @@ const TYPE_ICON: Record<ProfileType, typeof Wifi> = {
   rf: RadioTower,
   switch: Router,
 };
+const TYPE_TONE: Record<ProfileType, string> = {
+  ap: "var(--qz-accent)",
+  rf: "#8b7bf0",
+  switch: "var(--qz-info)",
+};
 
 /// Configuration profiles (owprov configurations) for the current Organization,
 /// classified by type with All / RF / Access Point / Switch filters. Sourced
@@ -103,42 +108,44 @@ export default function ProfilesPage() {
           Could not reach the provisioning service.
         </p>
       ) : (
-        <>
-          {/* Toolbar: search · tabs · add */}
-          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 bg-[var(--qz-input-bg)] border border-[var(--qz-border)] rounded-md px-[10px] py-[7px] w-[240px]">
-                <Search size={13} className="text-[var(--qz-fg-4)] flex-shrink-0" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search profiles…"
-                  className="flex-1 bg-transparent outline-none text-[13px] text-[var(--qz-fg-1)] placeholder:text-[var(--qz-fg-4)]"
-                />
-              </div>
-              <div className="flex items-center gap-1 bg-[var(--qz-input-bg)] border border-[var(--qz-border)] rounded-md p-[3px]">
-                {tabs.map((t) => (
+        <div className="surface overflow-hidden">
+          {/* Toolbar */}
+          <div className="flex items-center gap-3 px-4 py-3 flex-wrap border-b border-[var(--qz-border)]">
+            <div className="flex items-center gap-2 bg-[var(--qz-input-bg)] border border-[var(--qz-border)] rounded-md px-[10px] py-[6px] w-[240px]">
+              <Search size={13} className="text-[var(--qz-fg-4)] flex-shrink-0" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search profiles…"
+                className="flex-1 bg-transparent outline-none text-[13px] text-[var(--qz-fg-1)] placeholder:text-[var(--qz-fg-4)]"
+              />
+            </div>
+
+            <div className="flex items-center gap-1">
+              {tabs.map((t) => {
+                const on = tab === t.id;
+                return (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setTab(t.id)}
                     className={[
-                      "text-[12.5px] font-medium rounded-[5px] px-[12px] py-[5px] cursor-pointer transition-colors whitespace-nowrap",
-                      tab === t.id
-                        ? "bg-[var(--qz-surface-raised)] text-[var(--qz-fg-1)]"
-                        : "text-[var(--qz-fg-4)] hover:text-[var(--qz-fg-2)]",
+                      "inline-flex items-center gap-1.5 px-3 py-[6px] rounded-md text-[12px] font-medium cursor-pointer border transition-colors",
+                      on
+                        ? "bg-[var(--qz-accent-soft)] text-[var(--qz-accent)] border-[var(--qz-accent-border)]"
+                        : "bg-transparent text-[var(--qz-fg-3)] border-transparent hover:text-[var(--qz-fg-1)]",
                     ].join(" ")}
                   >
-                    {t.label}{" "}
+                    {t.label}
                     <span className="font-mono text-[11px] text-[var(--qz-fg-4)]">({t.count})</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
 
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium rounded-md px-[12px] py-[8px] cursor-not-allowed opacity-60"
+              className="ml-auto inline-flex items-center gap-1.5 text-[13px] font-medium rounded-md px-[12px] py-[7px] cursor-not-allowed opacity-60"
               style={{ background: "var(--qz-accent)", color: "var(--qz-fg-on-accent)" }}
               title="Profile creation is not wired up yet"
               disabled
@@ -148,11 +155,11 @@ export default function ProfilesPage() {
           </div>
 
           {state === "loading" ? (
-            <div className="surface p-8 grid place-items-center">
+            <div className="p-8 grid place-items-center">
               <p className="text-[13px] text-[var(--qz-fg-4)] m-0">Loading profiles…</p>
             </div>
           ) : rows.length === 0 ? (
-            <div className="surface p-6">
+            <div className="p-8 grid place-items-center">
               <p className="text-[13px] text-[var(--qz-fg-4)] m-0">
                 {board.total === 0
                   ? "No configuration profiles in this organization."
@@ -160,29 +167,27 @@ export default function ProfilesPage() {
               </p>
             </div>
           ) : (
-            <div className="surface overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="qz-table">
-                  <thead>
-                    <tr>
-                      <th>Type</th>
-                      <th>Name</th>
-                      <th>Description</th>
-                      <th>Used By</th>
-                      <th>Organization</th>
-                      <th>Venues</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((p) => (
-                      <ProfileRow key={p.id} p={p} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="qz-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Used By</th>
+                    <th>Organization</th>
+                    <th>Venues</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((p) => (
+                    <ProfileRow key={p.id} p={p} />
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -190,12 +195,19 @@ export default function ProfilesPage() {
 
 function ProfileRow({ p }: { p: Profile }) {
   const TypeIcon = TYPE_ICON[p.type];
+  const tone = TYPE_TONE[p.type];
   return (
     <tr>
       <td>
-        <span className="inline-flex items-center gap-2 text-[var(--qz-fg-2)]">
-          <TypeIcon size={15} className="text-[var(--qz-fg-4)]" />
-          {PROFILE_TYPE_LABEL[p.type]}
+        <span
+          className="badge"
+          style={{
+            color: tone,
+            borderColor: `color-mix(in oklab, ${tone} 38%, transparent)`,
+            background: `color-mix(in oklab, ${tone} 12%, transparent)`,
+          }}
+        >
+          <TypeIcon size={11} /> {PROFILE_TYPE_LABEL[p.type]}
         </span>
       </td>
       <td>

@@ -282,7 +282,7 @@ function AddInfrastructureModal({
     setSaving(true);
     setError(null);
     try {
-      await createInfrastructure(draft.mac);
+      await createInfrastructure(draft);
       onCreated();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not add the infrastructure.");
