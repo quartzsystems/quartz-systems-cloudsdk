@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "purge" ]; then
+    rm -rf /var/lib/quartz-cloudsdk-webui
+    rmdir --ignore-fail-on-non-empty /etc/quartz-cloudsdk 2>/dev/null || true
+fi
+
+#DEBHELPER#
+
+exit 0

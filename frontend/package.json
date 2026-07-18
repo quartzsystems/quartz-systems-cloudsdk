@@ -1,0 +1,24 @@
+{
+  "name": "quartz-cloudsdk-webui-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node -e \"const fs=require('fs');fs.rmSync('../backend/www',{recursive:true,force:true});fs.cpSync('out','../backend/www',{recursive:true})\"",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "20.14.0",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "tailwindcss": "^4",
+    "typescript": "5.5.3"
+  }
+}

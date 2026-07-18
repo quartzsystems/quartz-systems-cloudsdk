@@ -1,0 +1,37 @@
+[package]
+name = "quartz-cloudsdk-webui"
+version = "0.1.0"
+edition = "2021"
+description = "Quartz CloudSDK WebUI backend: TLS static server + CloudSDK API proxy"
+license = "GPL-2.0-or-later"
+
+[[bin]]
+name = "quartz-cloudsdk-webui"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.7"
+# Manual hyper accept loop (instead of axum::serve) so we own the TLS handshake
+# and give each socket TCP_NODELAY. Everything is pinned to the `ring` crypto
+# provider so the build needs only a C compiler — no cmake/nasm (aws-lc-rs) —
+# which keeps the .deb/.rpm container builds lean.
+hyper = { version = "1", features = ["server", "http1", "http2"] }
+hyper-util = { version = "0.1", features = ["tokio", "server-auto"] }
+tokio = { version = "1", features = ["full"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+rustls-pemfile = "2"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace"] }
+# `rustls-tls` selects the ring provider in reqwest (feature `__rustls-ring`),
+# matching the server side; no aws-lc-rs anywhere in the tree.
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+anyhow = "1"
+thiserror = "1"
+jsonwebtoken = "9"
+rand = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

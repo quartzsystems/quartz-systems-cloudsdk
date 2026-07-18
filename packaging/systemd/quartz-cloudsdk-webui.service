@@ -1,0 +1,27 @@
+[Unit]
+Description=Quartz CloudSDK WebUI backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/quartz-cloudsdk-webui
+Environment=QUARTZ_CLOUDSDK_WEBUI_CONFIG=/etc/quartz-cloudsdk/webui.toml
+Restart=on-failure
+RestartSec=2
+# Hardening — the backend only needs to read its config, talk to the CloudSDK
+# services over the network/loopback, and write its state dir (TLS pair + JWT
+# secret).
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadOnlyPaths=/etc/quartz-cloudsdk
+# Writable persistent dir (/var/lib/quartz-cloudsdk-webui) for the self-signed
+# TLS certificate/key and the session-signing secret, generated on first start.
+StateDirectory=quartz-cloudsdk-webui
+StateDirectoryMode=0700
+
+[Install]
+WantedBy=multi-user.target

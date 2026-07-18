@@ -1,0 +1,32 @@
+# Quartz CloudSDK WebUI backend configuration.
+# The backend terminates TLS itself and presents the WebUI on :4443.
+
+# Address the server binds to (TLS terminated here).
+listen = "0.0.0.0:4443"
+
+# ── CloudSDK endpoints ───────────────────────────────────────────────────────
+# Sign-in is verified against owsec's OAuth2 endpoint; the returned bearer
+# token is held server-side and injected into proxied /api/cloudsdk/* calls.
+cloudsdk_owsec_url = "https://127.0.0.1:16001"
+# Base URL the authenticated /api/cloudsdk/* proxy forwards to (owgw by default).
+cloudsdk_api_url   = "https://127.0.0.1:16002"
+# CloudSDK services usually serve self-signed certs over loopback — accept them.
+cloudsdk_accept_invalid_certs = true
+
+# Exported frontend served as static files.
+www_root = "/usr/share/quartz-cloudsdk-webui/www"
+
+# ── TLS (presented on `listen`) ──────────────────────────────────────────────
+# A self-signed pair is generated here on first start. Point these at your own
+# PKI to replace it.
+tls_cert_file = "/var/lib/quartz-cloudsdk-webui/tls/cert.pem"
+tls_key_file  = "/var/lib/quartz-cloudsdk-webui/tls/key.pem"
+
+# ── Session auth ─────────────────────────────────────────────────────────────
+# Session-signing secret; generated on first start (systemd StateDirectory).
+jwt_secret_file = "/var/lib/quartz-cloudsdk-webui/jwt.secret"
+# Mark the session cookie Secure (HTTPS-only). Leave true in production — the
+# WebUI is always served over TLS. Set false only for plain-HTTP local dev.
+cookie_secure = true
+# Session lifetime in hours (capped by the CloudSDK token's own lifetime).
+session_hours = 12

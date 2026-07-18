@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+# Build the Rust backend and stage the (pre-exported) Next.js frontend.
+# The frontend must be exported to backend/www BEFORE dpkg-buildpackage runs;
+# see ../README.md (or just use ../build-deb.sh, which does both).
+
+export CARGO_HOME = $(CURDIR)/debian/cargo
+
+PKGDIR = debian/quartz-cloudsdk-webui
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	cd backend && cargo build --release
+
+override_dh_auto_test:
+	# Backend tests run separately (cargo test); nothing to do at package time.
+
+override_dh_auto_install:
+	install -D -m0755 backend/target/release/quartz-cloudsdk-webui \
+		$(PKGDIR)/usr/bin/quartz-cloudsdk-webui
+	install -D -m0644 packaging/systemd/quartz-cloudsdk-webui.service \
+		$(PKGDIR)/lib/systemd/system/quartz-cloudsdk-webui.service
+	install -D -m0644 packaging/config/webui.toml \
+		$(PKGDIR)/etc/quartz-cloudsdk/webui.toml
+	mkdir -p $(PKGDIR)/usr/share/quartz-cloudsdk-webui/www
+	# Frontend export is optional at package time; warn but do not fail.
+	if [ -d backend/www ] && ls backend/www/index.html >/dev/null 2>&1; then \
+		cp -r backend/www/. $(PKGDIR)/usr/share/quartz-cloudsdk-webui/www/ ; \
+	else \
+		echo "W: backend/www not exported — shipping empty www (run 'npm run build' in frontend/ first)" ; \
+	fi
+
+override_dh_auto_clean:
+	cd backend && cargo clean || true
+	rm -rf debian/cargo

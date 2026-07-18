@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+# The TLS certificate/key and session-signing secret are generated on first
+# start into the systemd StateDirectory (/var/lib/quartz-cloudsdk-webui); no
+# manual step is required here. dh_installsystemd enables and starts the unit
+# via the #DEBHELPER# expansion below.
+
+#DEBHELPER#
+
+exit 0

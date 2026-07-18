@@ -1,0 +1,4 @@
+/target
+# The exported frontend is a build artifact staged here by `npm run build`.
+/www/*
+!/www/.gitkeep

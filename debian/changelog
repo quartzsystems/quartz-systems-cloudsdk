@@ -1,0 +1,7 @@
+quartz-cloudsdk-webui (0.1.0-1) unstable; urgency=medium
+
+  * Initial skeleton: axum backend (TLS static server on :4443 + CloudSDK API
+    proxy with owsec OAuth2 login), Next.js static-export frontend, systemd
+    unit.
+
+ -- Quartz Systems <cwellman@quartz.systems>  Sat, 18 Jul 2026 00:00:00 +0000

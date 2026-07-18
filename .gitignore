@@ -1,0 +1,14 @@
+# Build artifacts
+/dist/
+*.deb
+*.rpm
+*.buildinfo
+*.changes
+
+# Debian build byproducts
+/debian/cargo/
+/debian/quartz-cloudsdk-webui/
+/debian/.debhelper/
+/debian/files
+/debian/*.substvars
+/debian/*.debhelper.log
